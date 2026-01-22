@@ -65,3 +65,36 @@ export async function fetchGemData(gemName: string) {
     return null;
   }
 }
+
+// wiki.ts
+
+export async function fetchCompatibleSupports(tags: string[]) {
+  const baseUrl = "https://www.poe2wiki.net/w/api.php";
+
+  // We construct a query to find items of class 'Support Skill Gem'
+  // that share at least one tag with our active gem.
+  // We use the 'skill_gems' table or 'items' table depending on wiki structure.
+
+  const tagConditions = tags
+    .map((tag) => `gem_tags LIKE "%${tag.trim()}%"`)
+    .join(" OR ");
+
+  const params = new URLSearchParams({
+    action: "cargoquery",
+    format: "json",
+    tables: "skill_gems",
+    fields: "name, gem_tags, description",
+    // Filter for Support Gems that match our tags
+    where: `class_id="Support Skill Gem" AND (${tagConditions})`,
+    limit: "15",
+  });
+
+  try {
+    const response = await fetch(`${baseUrl}?${params.toString()}`);
+    const data = await response.json();
+    return data.cargoquery?.map((item: any) => item.title) || [];
+  } catch (error) {
+    console.error("Support Fetch Error:", error);
+    return [];
+  }
+}

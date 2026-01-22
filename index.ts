@@ -1,7 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { fetchGemData } from "./wiki.ts"; // Import our fetcher
+import { fetchGemData, fetchCompatibleSupports } from "./wiki.ts";
 
 const server = new McpServer({
   name: "poe2-mechanical-source",
@@ -71,26 +71,60 @@ ${cleanStats}
 );
 
 server.registerTool(
-  "search_gems",
+  "get_compatible_supports",
   {
-    description: "Search for a list of skill gems matching a keyword",
+    description:
+      "Finds support gems that are mechanically compatible with an active skill gem based on shared tags.",
     inputSchema: {
-      query: z.string().describe("Keyword to search for (e.g., 'Grenade')"),
+      gemName: z
+        .string()
+        .describe(
+          "The name of the active gem to find supports for (e.g., 'Gas Grenade')",
+        ),
     },
   },
-  async ({ query }) => {
-    const url = `https://www.poe2wiki.net/w/api.php?action=opensearch&search=${query}&limit=5&format=json`;
-    const response = await fetch(url);
-    const [, names] = await response.json();
+  async ({ gemName }) => {
+    // 1. First, get the active gem's data to see its tags
+    const activeGem = await fetchGemData(gemName);
+
+    if (!activeGem || !activeGem.gem_tags) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Could not find tags for ${gemName} to determine compatibility.`,
+          },
+        ],
+      };
+    }
+
+    // 2. Extract tags (e.g., "Attack, AoE, Projectile" -> ["Attack", "AoE", "Projectile"])
+    const tags = activeGem.gem_tags.split(",").map((t) => t.trim());
+
+    // 3. Fetch supports that match those tags
+    const supports = await fetchCompatibleSupports(tags);
+
+    if (supports.length === 0) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `No matching support gems found for tags: ${activeGem.gem_tags}`,
+          },
+        ],
+      };
+    }
+
+    // 4. Format the output
+    const supportList = supports
+      .map((s: any) => `* **${s.name}** (${s.gem_tags})\n  _${s.description}_`)
+      .join("\n\n");
 
     return {
       content: [
         {
           type: "text",
-          text:
-            names.length > 0
-              ? `Found: ${names.join(", ")}`
-              : "No gems found matching that name.",
+          text: `### Compatible Supports for ${gemName}\nBased on tags: **${activeGem.gem_tags}**\n\n${supportList}`,
         },
       ],
     };

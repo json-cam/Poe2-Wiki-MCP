@@ -4,6 +4,17 @@ A Model Context Protocol (MCP) server that provides real-time access to Path of 
 
 > ⚠️ **Early Development**: This project is in its early stages and is subject to frequent changes. APIs, features, and data structures may change without notice.
 
+## Vision
+
+The ultimate goal of this project is to create a **centralized hub for all Path of Exile 2 in-game data**, providing players with a comprehensive, AI-enhanced resource for build planning and theorycrafting. By consolidating information from multiple sources—including the official wiki, community databases, and game data—this server aims to:
+
+- **Streamline Information Access**: Aggregate skill gems, passive trees, items, mechanics, and more into a single, easily accessible source
+- **Enable Intelligent Build Analysis**: Leverage AI to provide build feedback, optimization suggestions, and synergy discovery
+- **Inspire Innovation**: Help players discover novel build combinations and strategies they may never have considered
+- **Reduce Context Switching**: Eliminate the need to juggle multiple wikis, spreadsheets, and tools while planning your character
+
+Currently focused on skill gem data, the project will expand to include passive skills, unique items, ascendancy mechanics, crafting systems, and more—all designed to work seamlessly with AI assistants to provide intelligent, context-aware guidance for both new and veteran players.
+
 ## Features
 
 - **Get Gem Info**: Fetch complete mechanical data for any PoE2 skill gem, including stats at all levels
