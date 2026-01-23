@@ -1,3 +1,10 @@
+/**
+ * Fetches the raw wiki page content for the specified Skill gem and parses the {{Item}} template
+ * into a JSON object.
+ *
+ * @param {string} gemName - The name of the gem (e.g., "Gas Grenade")
+ * @returns {Promise<Record<string, string> | null>} - The parsed JSON object or null if the page is not found
+ */
 export async function fetchGemData(gemName: string) {
   const baseUrl = "https://www.poe2wiki.net/w/api.php";
   const params = new URLSearchParams({
@@ -20,23 +27,17 @@ export async function fetchGemData(gemName: string) {
 
     const content = data.query.pages[pageId].revisions[0].slots.main["*"];
 
-    // 1. Find the start of the {{Item template
     const startIdx = content.indexOf("{{Item");
     if (startIdx === -1) return { raw: content.substring(0, 1000) };
 
-    // 2. Extract everything from {{Item to the end of the string
-    // and then work backwards to find the last }} of the main block.
-    // This prevents inner templates like {{c|...}} from breaking the match.
     const remainingContent = content.substring(startIdx);
 
-    // 3. Robust Line-by-Line Parsing
     const result: Record<string, string> = {};
     const lines = remainingContent.split("\n");
 
     let currentKey = "";
 
     for (const line of lines) {
-      // Check for the end of the Item template
       if (line.trim() === "}}") break;
 
       if (line.includes("=")) {
@@ -63,8 +64,6 @@ export async function fetchGemData(gemName: string) {
     return null;
   }
 }
-
-// wiki.ts
 
 export async function fetchCompatibleSupports(gemName: string) {
   const baseUrl = "https://www.poe2wiki.net/w/api.php";
