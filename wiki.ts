@@ -1,5 +1,3 @@
-// wiki.ts
-
 export async function fetchGemData(gemName: string) {
   const baseUrl = "https://www.poe2wiki.net/w/api.php";
   const params = new URLSearchParams({
@@ -68,33 +66,105 @@ export async function fetchGemData(gemName: string) {
 
 // wiki.ts
 
-export async function fetchCompatibleSupports(tags: string[]) {
+export async function fetchCompatibleSupports(gemName: string) {
   const baseUrl = "https://www.poe2wiki.net/w/api.php";
-
-  // We construct a query to find items of class 'Support Skill Gem'
-  // that share at least one tag with our active gem.
-  // We use the 'skill_gems' table or 'items' table depending on wiki structure.
-
-  const tagConditions = tags
-    .map((tag) => `gem_tags LIKE "%${tag.trim()}%"`)
-    .join(" OR ");
-
   const params = new URLSearchParams({
-    action: "cargoquery",
+    action: "query",
+    prop: "revisions",
+    titles: gemName,
+    rvprop: "content",
     format: "json",
-    tables: "skill_gems",
-    fields: "name, gem_tags, description",
-    // Filter for Support Gems that match our tags
-    where: `class_id="Support Skill Gem" AND (${tagConditions})`,
-    limit: "15",
+    rvslots: "main",
+    redirects: "1",
   });
 
   try {
     const response = await fetch(`${baseUrl}?${params.toString()}`);
     const data = await response.json();
-    return data.cargoquery?.map((item: any) => item.title) || [];
+    const pages = data.query?.pages;
+    if (!pages) return [];
+
+    const pageId = Object.keys(pages)[0];
+    const content = pages[pageId]?.revisions?.[0]?.slots?.main?.["*"];
+    if (!content) return [];
+
+    // 1. Target the specific "Recommended" section
+    let startIdx = content.toLowerCase().indexOf("{{recommended support gems");
+    if (startIdx === -1) {
+      startIdx = content.toLowerCase().indexOf("==recommended support gems==");
+    }
+
+    if (startIdx === -1) return [];
+
+    const lines = content.substring(startIdx).split("\n");
+    const gems: string[] = [];
+
+    for (const line of lines) {
+      // Stop if we hit a new major section
+      if (
+        line.trim().startsWith("==") &&
+        !line.toLowerCase().includes("recommended")
+      )
+        break;
+
+      // Extract names from {{il|Gem Name}} or {{il|Gem Name|Display}}
+      const ilMatches = line.matchAll(/{{il\|([^}|]+)(?:\|[^}]+)?}}/g);
+      for (const match of ilMatches) {
+        const name = match[1].trim();
+        if (name && !gems.includes(name)) {
+          gems.push(name);
+        }
+      }
+
+      // Stop at the end of the template block
+      if (line.trim() === "}}") break;
+    }
+
+    return gems.map((name) => ({
+      name: name,
+      description: "Recommended Support Gem",
+    }));
   } catch (error) {
     console.error("Support Fetch Error:", error);
     return [];
   }
+}
+
+// Fallback logic to find links under a "Recommended" header if the template is missing
+function fetchManualLinksFallback(content: string) {
+  const recommendedSection = content.match(
+    /==\s*Recommended support gems\s*==([\s\S]*?)(==|$)/i,
+  );
+  if (!recommendedSection) return [];
+
+  const links = recommendedSection[1].matchAll(
+    /\[\[([^]|]+)\]\]|{{il\|([^}|]+)}}/g,
+  );
+
+  return Array.from(links).map((m) => ({
+    name: (m[1] || m[2]).trim(),
+    description: "Manual Wiki Link",
+  }));
+}
+
+// Simple fallback if the complex join fails
+async function fetchSupportsFallback(tagConditions: string) {
+  const baseUrl = "https://www.poe2wiki.net/w/api.php";
+  const params = new URLSearchParams({
+    action: "cargoquery",
+    format: "json",
+    tables: "items",
+    fields: "name, tags",
+    where: `class_id LIKE "%Support%Gem%" AND (${tagConditions})`,
+    limit: "10",
+  });
+  const response = await fetch(`${baseUrl}?${params.toString()}`);
+  const data = await response.json();
+  return (
+    data.cargoquery?.map((item: any) => ({
+      name: item.title.name,
+      gem_tags: item.title.tags,
+      description: "Refer to wiki for details.",
+    })) || []
+  );
 }

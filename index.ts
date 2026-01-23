@@ -70,61 +70,38 @@ ${cleanStats}
   },
 );
 
+// index.ts
 server.registerTool(
   "get_compatible_supports",
   {
     description:
-      "Finds support gems that are mechanically compatible with an active skill gem based on shared tags.",
+      "Fetches the officially recommended support gems for a specific skill from the wiki.",
     inputSchema: {
       gemName: z
         .string()
-        .describe(
-          "The name of the active gem to find supports for (e.g., 'Gas Grenade')",
-        ),
+        .describe("The name of the active gem (e.g., 'Gas Grenade')"),
     },
   },
   async ({ gemName }) => {
-    // 1. First, get the active gem's data to see its tags
-    const activeGem = await fetchGemData(gemName);
-
-    if (!activeGem || !activeGem.gem_tags) {
-      return {
-        content: [
-          {
-            type: "text",
-            text: `Could not find tags for ${gemName} to determine compatibility.`,
-          },
-        ],
-      };
-    }
-
-    // 2. Extract tags (e.g., "Attack, AoE, Projectile" -> ["Attack", "AoE", "Projectile"])
-    const tags = activeGem.gem_tags.split(",").map((t) => t.trim());
-
-    // 3. Fetch supports that match those tags
-    const supports = await fetchCompatibleSupports(tags);
+    const supports = await fetchCompatibleSupports(gemName);
 
     if (supports.length === 0) {
       return {
         content: [
           {
             type: "text",
-            text: `No matching support gems found for tags: ${activeGem.gem_tags}`,
+            text: `No recommended supports found on the wiki page for ${gemName}.`,
           },
         ],
       };
     }
 
-    // 4. Format the output
-    const supportList = supports
-      .map((s: any) => `* **${s.name}** (${s.gem_tags})\n  _${s.description}_`)
-      .join("\n\n");
-
+    const supportList = supports.map((s) => `* **${s.name}**`).join("\n");
     return {
       content: [
         {
           type: "text",
-          text: `### Compatible Supports for ${gemName}\nBased on tags: **${activeGem.gem_tags}**\n\n${supportList}`,
+          text: `### Recommended Supports for ${gemName}\n\n${supportList}\n\n**Note to AI:** You may use the 'get_gem_info' tool to look up the specific mechanics and scaling for any of these supports to explain why they are recommended.`,
         },
       ],
     };
