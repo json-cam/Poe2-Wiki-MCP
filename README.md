@@ -18,7 +18,7 @@ Currently focused on skill gem data, the project will expand to include passive 
 ## Features
 
 - **Get Gem Info**: Fetch complete mechanical data for any PoE2 skill gem, including stats at all levels
-- **Search Gems**: Search for skill gems by keyword
+- **Get Compatible Supports**: Retrieve officially recommended support gems for any active skill gem
 - Automatic wiki syntax cleanup for human-readable output
 - In-memory caching (1 hour TTL) for improved performance
 - Full raw JSON data access for detailed analysis
@@ -52,15 +52,15 @@ Fetches complete mechanical template data for a PoE2 skill gem.
 - Human-readable summary with tags, description, requirements, cooldown, and stats
 - Full JSON data including all progression levels
 
-#### `search_gems`
+#### `get_compatible_supports`
 
-Searches for skill gems matching a keyword.
+Fetches officially recommended support gems for a specific active skill gem from the wiki.
 
 **Input:**
-- `query` (string): Keyword to search for (e.g., "Grenade")
+- `gemName` (string): The name of the active gem (e.g., "Gas Grenade")
 
 **Output:**
-- List of up to 5 matching gem names
+- List of recommended support gems extracted from the wiki's "Recommended Support Gems" section
 
 ## Project Structure
 
@@ -77,12 +77,12 @@ Searches for skill gems matching a keyword.
 
 ## How It Works
 
-1. The server registers two tools using the MCP SDK
-2. When `get_gem_info` is called, it fetches the wiki page for the specified gem
-3. The wiki template parser extracts structured data from the MediaWiki markup
+1. The server registers tools using the MCP SDK
+2. When `get_gem_info` is called, it fetches the wiki page for the specified gem and parses the `{{Item}}` template
+3. When `get_compatible_supports` is called, it extracts recommended support gems from the wiki's "Recommended Support Gems" section
 4. Wiki syntax (colors, links, HTML tags) is cleaned up for readability
 5. Results are cached for 1 hour to reduce API calls
-6. Both a formatted summary and raw JSON are returned
+6. Both formatted summaries and raw JSON data are returned where applicable
 
 ## Development
 
