@@ -1,6 +1,6 @@
 # Poe2 Wiki MCP Server
 
-A Model Context Protocol (MCP) server that provides real-time access to Path of Exile 2 skill gem data from the official wiki.
+A Model Context Protocol (MCP) server that provides real-time access to Path of Exile 2 game data from the official wiki (and other credible sources).
 
 > ⚠️ **Early Development**: This project is in its early stages and is subject to frequent changes. APIs, features, and data structures may change without notice.
 
